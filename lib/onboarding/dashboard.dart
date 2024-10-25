@@ -1,6 +1,6 @@
 import 'package:cgas_admin/screen/dashboard_content.dart';
 import 'package:cgas_admin/screen/manage_department.dart';
-import 'package:cgas_admin/screen/manage_faculity.dart';
+import 'package:cgas_admin/screen/manage_faculty.dart';
 import 'package:cgas_admin/screen/manage_hod.dart';
 import 'package:cgas_admin/screen/manage_security.dart';
 import 'package:cgas_admin/screen/manage_year.dart';
@@ -172,7 +172,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       case 2:
         return ManageHOD();
       case 3:
-        return ManageFaculity();
+        return ManageFaculty();
       case 4:
         return ManageDept();
       case 5:
