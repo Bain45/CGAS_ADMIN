@@ -71,18 +71,16 @@ class _ManageSecurityState extends State<ManageSecurity> {
           password: _passController.text,
         );
 
-        if (userCredential != null) {
-          await _storeUserData(userCredential.user!.uid);
-          Fluttertoast.showToast(
-            msg: "Registration Successful",
-            toastLength: Toast.LENGTH_SHORT,
-            gravity: ToastGravity.BOTTOM,
-            backgroundColor: Colors.green,
-            textColor: Colors.white,
-          );
-          _fetchSecurityData(); // Refresh the security list after registration
-        }
-      }
+        await _storeUserData(userCredential.user!.uid);
+        Fluttertoast.showToast(
+          msg: "Registration Successful",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.green,
+          textColor: Colors.white,
+        );
+        _fetchSecurityData(); // Refresh the security list after registration
+            }
     } catch (e) {
       Fluttertoast.showToast(
         msg: "Registration Failed",
