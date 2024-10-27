@@ -19,13 +19,19 @@ class _ManageDeptState extends State<ManageDept>
   final Duration _animationDuration =
       const Duration(milliseconds: 300); // Animation duration
 
-  // Function to add a new course to Firestore
+  // Function to add a new department to Firestore
   Future<void> _addDept() async {
     if (_formKey.currentState!.validate()) {
       try {
-        await _deptCollection.add({
+        // Generate a unique document reference
+        DocumentReference newDeptRef = _deptCollection.doc();
+
+        // Add the department data including the departmentId
+        await newDeptRef.set({
+          'departmentId': newDeptRef.id, // Store the department ID
           'department': _deptNameController.text,
         });
+
         _deptNameController.clear();
         setState(() {
           _isFormVisible = false; // Hide form after adding
@@ -33,32 +39,32 @@ class _ManageDeptState extends State<ManageDept>
       } catch (e) {
         // Handle error (e.g., show a Snackbar)
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Failed to add course: $e")),
+          SnackBar(content: Text("Failed to add department: $e")),
         );
       }
     }
   }
 
-  // Function to delete a course from Firestore
-  Future<void> _deleteDept(String courseId) async {
+  // Function to delete a department from Firestore
+  Future<void> _deleteDept(String departmentId) async {
     try {
-      await _deptCollection.doc(courseId).delete();
+      await _deptCollection.doc(departmentId).delete();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed to delete course: $e")),
+        SnackBar(content: Text("Failed to delete department: $e")),
       );
     }
   }
 
-  // Function to edit a course in Firestore
-  Future<void> _editDept(String courseId, String newdepartment) async {
+  // Function to edit a department in Firestore
+  Future<void> _editDept(String departmentId, String newDepartment) async {
     try {
-      await _deptCollection.doc(courseId).update({
-        'department': newdepartment,
+      await _deptCollection.doc(departmentId).update({
+        'department': newDepartment,
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed to edit course: $e")),
+        SnackBar(content: Text("Failed to edit department: $e")),
       );
     }
   }
@@ -70,7 +76,7 @@ class _ManageDeptState extends State<ManageDept>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Add Course Button at the top
+          // Add Department Button at the top
           ElevatedButton.icon(
             onPressed: () {
               setState(() {
@@ -81,7 +87,7 @@ class _ManageDeptState extends State<ManageDept>
             label: Text(_isFormVisible ? "Cancel" : "Add Department"),
           ),
 
-          // Animated Form for adding courses
+          // Animated Form for adding departments
           AnimatedSize(
             duration: _animationDuration,
             curve: Curves.easeInOut,
@@ -96,7 +102,7 @@ class _ManageDeptState extends State<ManageDept>
                       ),
                       const SizedBox(height: 10),
 
-                      // Course Form
+                      // Department Form
                       Form(
                         key: _formKey,
                         child: Column(
@@ -135,7 +141,7 @@ class _ManageDeptState extends State<ManageDept>
 
           const SizedBox(height: 20),
 
-          // Table of Courses fetched from Firestore
+          // Table of Departments fetched from Firestore
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: _deptCollection.snapshots(),
@@ -152,9 +158,7 @@ class _ManageDeptState extends State<ManageDept>
                 return SingleChildScrollView(
                   scrollDirection: Axis.vertical,
                   child: SizedBox(
-                    width: MediaQuery.of(context)
-                        .size
-                        .width, // Set the width to full screen
+                    width: MediaQuery.of(context).size.width, // Set the width to full screen
                     child: DataTable(
                       columns: const [
                         DataColumn(label: Text('Sl.No')),
@@ -162,7 +166,7 @@ class _ManageDeptState extends State<ManageDept>
                         DataColumn(label: Text('Actions')),
                       ],
                       rows: deptData.asMap().entries.map((entry) {
-                        String courseId = entry.value.id;
+                        String departmentId = entry.value.id;
                         String department =
                             entry.value['department'] as String;
 
@@ -174,16 +178,14 @@ class _ManageDeptState extends State<ManageDept>
                               children: [
                                 // Delete Button
                                 IconButton(
-                                  icon: const Icon(Icons.delete,
-                                      color: Colors.red),
-                                  onPressed: () => _deleteDept(courseId),
+                                  icon: const Icon(Icons.delete, color: Colors.red),
+                                  onPressed: () => _deleteDept(departmentId),
                                 ),
-                                // Edit Button (optional)
+                                // Edit Button
                                 IconButton(
-                                  icon: const Icon(Icons.edit,
-                                      color: Colors.blue),
+                                  icon: const Icon(Icons.edit, color: Colors.blue),
                                   onPressed: () {
-                                    _showEditDialog(courseId, department);
+                                    _showEditDialog(departmentId, department);
                                   },
                                 ),
                               ],
@@ -203,9 +205,9 @@ class _ManageDeptState extends State<ManageDept>
   }
 
   // Function to show edit dialog
-  void _showEditDialog(String courseId, String currentdepartment) {
+  void _showEditDialog(String departmentId, String currentDepartment) {
     TextEditingController _editController =
-        TextEditingController(text: currentdepartment);
+        TextEditingController(text: currentDepartment);
 
     showDialog(
       context: context,
@@ -224,7 +226,7 @@ class _ManageDeptState extends State<ManageDept>
           ),
           TextButton(
             onPressed: () {
-              _editDept(courseId, _editController.text);
+              _editDept(departmentId, _editController.text);
               Navigator.pop(context);
             },
             child: const Text('Save'),
