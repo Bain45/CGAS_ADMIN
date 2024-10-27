@@ -21,28 +21,25 @@ class _ManageHODState extends State<ManageHOD> {
   final TextEditingController _passController = TextEditingController();
   Uint8List? _selectedImage;
 
-  bool _isFormVisible = false; // To manage form visibility
+  bool _isFormVisible = false;
 
-  List<Map<String, dynamic>> hodList = []; // To hold HOD data
-  Map<String, String> departmentMap = {}; // To hold department ID to name mapping
-  String? selectedDepartmentId; // To hold selected department ID
+  List<Map<String, dynamic>> hodList = [];
+  Map<String, String> departmentMap = {};
+  String? selectedDepartmentId;
 
   @override
   void initState() {
     super.initState();
-    _fetchDepartments(); // Fetch department data first
-    _fetchHODData(); // Fetch HOD data after departments are fetched
+    _fetchDepartments();
+    _fetchHODData();
   }
 
   Future<void> _fetchDepartments() async {
     try {
-      final querySnapshot =
-          await FirebaseFirestore.instance.collection('department').get();
+      final querySnapshot = await FirebaseFirestore.instance.collection('department').get();
       setState(() {
-        // Create a mapping of department IDs to names
         departmentMap = {
-          for (var doc in querySnapshot.docs)
-            doc.id: doc['department'], // Assuming department name is stored in 'name' field
+          for (var doc in querySnapshot.docs) doc.id: doc['department'],
         };
       });
     } catch (e) {
@@ -59,28 +56,26 @@ class _ManageHODState extends State<ManageHOD> {
 
   Future<void> _fetchHODData() async {
     try {
-      final querySnapshot =
-          await FirebaseFirestore.instance.collection('hod').get();
-
-      List<Map<String, dynamic>> tempHodList = []; // Create a temporary list
+      final querySnapshot = await FirebaseFirestore.instance.collection('hod').get();
+      List<Map<String, dynamic>> tempHodList = [];
 
       for (var doc in querySnapshot.docs) {
         final data = doc.data();
-        String departmentName = await fetchDepartmentName(data['departmentId']); // Wait for department name
+        String departmentName = await fetchDepartmentName(data['departmentId']);
 
         tempHodList.add({
-          'id': doc.id, // Store the document ID for deletion
+          'id': doc.id,
           'name': data['name'],
           'email': data['email'],
           'contact': data['phone'],
-          'photo': data['imageUrl'] ?? 'assets/dummy-profile-pic.jpg', // Fallback photo
-          'departmentId': data['departmentId'], // Store the department ID for later use
-          'departmentName': departmentName, // Fetch the department name
+          'photo': data['imageUrl'] ?? '', // Use empty string if imageUrl is null
+          'departmentId': data['departmentId'],
+          'departmentName': departmentName,
         });
       }
 
       setState(() {
-        hodList = tempHodList; // Update state with the complete list
+        hodList = tempHodList;
       });
     } catch (e) {
       print("Error fetching HOD data: $e");
@@ -96,21 +91,15 @@ class _ManageHODState extends State<ManageHOD> {
 
   Future<String> fetchDepartmentName(String departmentId) async {
     try {
-      // Fetch the document from the 'departments' collection using the departmentId
-      final doc = await FirebaseFirestore.instance
-          .collection('department')
-          .doc(departmentId)
-          .get();
-
-      // Check if the document exists and return the name
+      final doc = await FirebaseFirestore.instance.collection('department').doc(departmentId).get();
       if (doc.exists) {
-        return doc['department']; // Return the department name
+        return doc['department'];
       } else {
-        return 'Unknown'; // Handle the case where the department does not exist
+        return 'Unknown';
       }
     } catch (e) {
       print("Error fetching department name: $e");
-      return 'Error'; // Handle error case
+      return 'Error';
     }
   }
 
@@ -131,8 +120,8 @@ class _ManageHODState extends State<ManageHOD> {
           backgroundColor: Colors.green,
           textColor: Colors.white,
         );
-        _fetchHODData(); // Refresh the HOD list after registration
-            }
+        _fetchHODData();
+      }
     } catch (e) {
       Fluttertoast.showToast(
         msg: "Registration Failed",
@@ -149,14 +138,14 @@ class _ManageHODState extends State<ManageHOD> {
     try {
       final FirebaseFirestore firestore = FirebaseFirestore.instance;
       await firestore.collection('hod').doc(userId).set({
-        'uid': userId, // Add the uid to the Firestore document
+        'uid': userId,
         'name': _nameController.text,
         'email': _emailController.text,
         'phone': _contactController.text,
-        'departmentId': selectedDepartmentId, // Store selected department ID
+        'departmentId': selectedDepartmentId,
       });
 
-      await _uploadImage(userId); // Upload image after storing basic data
+      await _uploadImage(userId);
     } catch (e) {
       print("Error storing user data: $e");
     }
@@ -165,16 +154,11 @@ class _ManageHODState extends State<ManageHOD> {
   Future<void> _uploadImage(String userId) async {
     try {
       if (_selectedImage != null) {
-        Reference ref =
-            FirebaseStorage.instance.ref().child('hod_images/$userId.jpg');
-
-        // Upload the image from Uint8List
-        UploadTask uploadTask =
-            ref.putData(_selectedImage!); // Use putData for Uint8List
+        Reference ref = FirebaseStorage.instance.ref().child('hod_images/$userId.jpg');
+        UploadTask uploadTask = ref.putData(_selectedImage!);
         TaskSnapshot taskSnapshot = await uploadTask.whenComplete(() => null);
         String imageUrl = await taskSnapshot.ref.getDownloadURL();
 
-        // Update Firestore with the image URL
         await FirebaseFirestore.instance.collection('hod').doc(userId).update({
           'imageUrl': imageUrl,
         });
@@ -210,36 +194,31 @@ class _ManageHODState extends State<ManageHOD> {
   }
 
   Future<void> _pickImage() async {
-    // Use ImagePickerWeb to get the image as Uint8List
     final Uint8List? pickedFile = await ImagePickerWeb.getImageAsBytes();
-
     if (pickedFile != null) {
       setState(() {
-        _selectedImage = pickedFile; // Store the image bytes directly
+        _selectedImage = pickedFile;
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView( // Wrap everything in a SingleChildScrollView
+    return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Add HOD Button at the top
             ElevatedButton.icon(
               onPressed: () {
                 setState(() {
-                  _isFormVisible = !_isFormVisible; // Toggle form visibility
+                  _isFormVisible = !_isFormVisible;
                 });
               },
               icon: Icon(_isFormVisible ? Icons.close : Icons.add),
               label: Text(_isFormVisible ? "Cancel" : "Add HOD"),
             ),
-
-            // HOD Form (Only show if _isFormVisible is true)
             if (_isFormVisible) ...[
               const SizedBox(height: 20),
               const Text(
@@ -247,43 +226,17 @@ class _ManageHODState extends State<ManageHOD> {
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 10),
-
-              // HOD Form
               Form(
                 key: _formKey,
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Center(
-                      child: GestureDetector(
-                        onTap: _pickImage,
-                        child: Stack(
-                          children: [
-                            CircleAvatar(
-                              radius: 50,
-                              backgroundColor: const Color(0xff4c505b),
-                              backgroundImage: _selectedImage != null
-                                  ? MemoryImage(_selectedImage!) // Use MemoryImage for web
-                                  : const AssetImage('assets/dummy-profile-pic.jpg')
-                                      as ImageProvider,
-                              child: _selectedImage == null
-                                  ? const Icon(
-                                      Icons.add,
-                                      size: 40,
-                                      color: Color(0xfff7f7f7),
-                                    )
-                                  : null,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
                     TextFormField(
                       controller: _nameController,
                       decoration: const InputDecoration(labelText: "Name"),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter your name';
+                          return 'Please enter a name';
                         }
                         return null;
                       },
@@ -293,7 +246,7 @@ class _ManageHODState extends State<ManageHOD> {
                       decoration: const InputDecoration(labelText: "Email"),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter your email';
+                          return 'Please enter an email';
                         }
                         return null;
                       },
@@ -303,15 +256,45 @@ class _ManageHODState extends State<ManageHOD> {
                       decoration: const InputDecoration(labelText: "Contact"),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter your contact number';
+                          return 'Please enter a contact number';
                         }
                         return null;
                       },
                     ),
+                    DropdownButtonFormField<String>(
+                      value: selectedDepartmentId,
+                      decoration: const InputDecoration(labelText: "Department"),
+                      items: departmentMap.entries.map((entry) {
+                        return DropdownMenuItem<String>(
+                          value: entry.key,
+                          child: Text(entry.value),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          selectedDepartmentId = newValue;
+                        });
+                      },
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please select a department';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                    ElevatedButton.icon(
+                      onPressed: _pickImage,
+                      icon: const Icon(Icons.image),
+                      label: const Text("Pick Image"),
+                    ),
+                    const SizedBox(height: 10),
+                    if (_selectedImage != null)
+                      Image.memory(_selectedImage!, height: 150),
                     TextFormField(
                       controller: _passController,
-                      decoration: const InputDecoration(labelText: "Password"),
                       obscureText: true,
+                      decoration: const InputDecoration(labelText: "Password"),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Please enter a password';
@@ -319,28 +302,7 @@ class _ManageHODState extends State<ManageHOD> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 10),
-                    DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(labelText: "Select Department"),
-                      items: departmentMap.entries.map((entry) {
-                        return DropdownMenuItem<String>(
-                          value: entry.key,
-                          child: Text(entry.value),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          selectedDepartmentId = value; // Store the selected department ID
-                        });
-                      },
-                      validator: (value) {
-                        if (value == null) {
-                          return 'Please select a department';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 20),
                     ElevatedButton(
                       onPressed: _registerHOD,
                       child: const Text("Register HOD"),
@@ -349,32 +311,38 @@ class _ManageHODState extends State<ManageHOD> {
                 ),
               ),
             ],
-
-            // HOD List
             const SizedBox(height: 20),
             const Text(
-              "Registered HODs",
+              "HOD List",
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 10),
             ListView.builder(
               shrinkWrap: true,
-              physics: NeverScrollableScrollPhysics(), // Prevent scrolling
+              physics: NeverScrollableScrollPhysics(),
               itemCount: hodList.length,
               itemBuilder: (context, index) {
                 final hod = hodList[index];
                 return Card(
-                  margin: const EdgeInsets.symmetric(vertical: 10),
                   child: ListTile(
                     leading: CircleAvatar(
                       backgroundImage: NetworkImage(hod['photo']),
+                      child: hod['photo'].isEmpty
+                          ? const Icon(Icons.person)
+                          : null,
                     ),
                     title: Text(hod['name']),
-                    subtitle: Text(hod['email']),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(hod['email']),
+                        Text(hod['contact']),
+                        Text(hod['departmentName']),
+                      ],
+                    ),
                     trailing: IconButton(
                       icon: const Icon(Icons.delete, color: Colors.red),
                       onPressed: () {
-                        _deleteHOD(hod['id']); // Delete HOD on button press
+                        _deleteHOD(hod['id']);
                       },
                     ),
                   ),
