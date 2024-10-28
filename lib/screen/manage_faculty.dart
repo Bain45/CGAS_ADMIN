@@ -24,7 +24,6 @@ class _ManageFacultyState extends State<ManageFaculty> {
   bool _isFormVisible = false; // To manage form visibility
 
   List<Map<String, dynamic>> facultyList = []; // To hold Faculty data
-  List<Map<String, dynamic>> hodList = []; // To hold HOD data
   Map<String, String> departmentMap = {}; // To hold department ID to name mapping
   String? selectedDepartmentId; // To hold selected department ID
   String? selectedHodId; // To hold selected HOD ID
@@ -34,7 +33,6 @@ class _ManageFacultyState extends State<ManageFaculty> {
     super.initState();
     _fetchDepartments();
     _fetchFacultyData();
-    _fetchHodData(); // Fetch HOD data
   }
 
   Future<void> _fetchDepartments() async {
@@ -44,7 +42,7 @@ class _ManageFacultyState extends State<ManageFaculty> {
       setState(() {
         departmentMap = {
           for (var doc in querySnapshot.docs)
-            if (doc.data().containsKey('department')) // Check if 'name' exists
+            if (doc.data().containsKey('department')) // Check if 'department' exists
               doc.id: doc['department'],
         };
       });
@@ -61,19 +59,17 @@ class _ManageFacultyState extends State<ManageFaculty> {
     }
   }
 
-  Future<void> _fetchHodData() async {
+  Future<void> _fetchHodByDepartment(String departmentId) async {
     try {
-      final querySnapshot = await FirebaseFirestore.instance.collection('hod').get();
-      List<Map<String, dynamic>> tempHodList = [];
-      for (var doc in querySnapshot.docs) {
-        tempHodList.add({
-          'id': doc.id,
-          'name': doc['name'],
-        });
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('hod')
+          .where('departmentId', isEqualTo: departmentId) // Assume HOD has departmentId field
+          .get();
+      if (querySnapshot.docs.isNotEmpty) {
+        selectedHodId = querySnapshot.docs.first.id; // Get the first HOD for the department
+      } else {
+        selectedHodId = null; // No HOD found for the department
       }
-      setState(() {
-        hodList = tempHodList;
-      });
     } catch (e) {
       Fluttertoast.showToast(
         msg: "Error fetching HOD data: $e",
@@ -124,7 +120,7 @@ class _ManageFacultyState extends State<ManageFaculty> {
           .doc(departmentId)
           .get();
       if (doc.exists) {
-        return doc['name'];
+        return doc['department']; // Change to 'department' as per your collection
       } else {
         return 'Unknown';
       }
@@ -278,108 +274,107 @@ class _ManageFacultyState extends State<ManageFaculty> {
                                   bottom: 0,
                                   right: 0,
                                   child: CircleAvatar(
-                                    backgroundColor: Colors.white,
-                                    radius: 15,
-                                    child: Icon(Icons.edit, size: 15),
+                                    radius: 20,
+                                    backgroundColor: Colors.red,
+                                    child: Icon(
+                                      Icons.delete,
+                                      color: Colors.white,
+                                      size: 16,
+                                    ),
                                   ),
                                 ),
                             ],
                           ),
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 10),
                       TextFormField(
                         controller: _nameController,
-                        decoration: const InputDecoration(labelText: 'Name'),
+                        decoration: const InputDecoration(
+                          labelText: 'Full Name',
+                          border: OutlineInputBorder(),
+                        ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Please enter name';
+                            return 'Please enter your name';
                           }
                           return null;
                         },
                       ),
+                      const SizedBox(height: 10),
                       TextFormField(
                         controller: _emailController,
-                        decoration: const InputDecoration(labelText: 'Email'),
+                        decoration: const InputDecoration(
+                          labelText: 'Email',
+                          border: OutlineInputBorder(),
+                        ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Please enter email';
+                            return 'Please enter your email';
                           }
                           return null;
                         },
                       ),
+                      const SizedBox(height: 10),
                       TextFormField(
                         controller: _contactController,
-                        decoration:
-                            const InputDecoration(labelText: 'Contact No.'),
+                        decoration: const InputDecoration(
+                          labelText: 'Contact Number',
+                          border: OutlineInputBorder(),
+                        ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Please enter contact number';
+                            return 'Please enter your contact number';
                           }
                           return null;
                         },
                       ),
+                      const SizedBox(height: 10),
                       TextFormField(
                         controller: _passController,
-                        decoration: const InputDecoration(labelText: 'Password'),
+                        decoration: const InputDecoration(
+                          labelText: 'Password',
+                          border: OutlineInputBorder(),
+                        ),
                         obscureText: true,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Please enter password';
+                            return 'Please enter a password';
                           }
                           return null;
                         },
                       ),
                       const SizedBox(height: 10),
-                      DropdownButtonFormField<String>(
-                        decoration: const InputDecoration(labelText: 'Department'),
-                        items: departmentMap.entries
-                            .map(
-                              (entry) => DropdownMenuItem<String>(
-                                value: entry.key,
-                                child: Text(entry.value),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            selectedDepartmentId = value;
-                          });
-                        },
-                        validator: (value) {
-                          if (value == null) {
-                            return 'Please select a department';
-                          }
-                          return null;
-                        },
-                      ),
+Container(
+  padding: const EdgeInsets.symmetric(horizontal: 12.0), // Add padding for better touch target
+  decoration: BoxDecoration(
+    border: Border.all(color: Colors.grey), // Border color
+    borderRadius: BorderRadius.circular(8.0), // Rounded corners
+  ),
+  child: DropdownButton<String>(
+    hint: const Text("Select Department"),
+    value: selectedDepartmentId,
+    isExpanded: true, // Make the dropdown expand to full width
+    underline: SizedBox(), // Remove the default underline
+    items: departmentMap.entries
+        .map((entry) => DropdownMenuItem<String>(
+              value: entry.key,
+              child: Text(entry.value),
+            ))
+        .toList(),
+    onChanged: (value) async {
+      setState(() {
+        selectedDepartmentId = value;
+        _fetchHodByDepartment(value!); // Fetch HOD when department changes
+      });
+    },
+  ),
+),
+
                       const SizedBox(height: 10),
-                      DropdownButtonFormField<String>(
-                        decoration: const InputDecoration(labelText: 'HOD'),
-                        items: hodList
-                            .map(
-                              (hod) => DropdownMenuItem<String>(
-                                value: hod['id'],
-                                child: Text(hod['name']),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            selectedHodId = value;
-                          });
-                        },
-                        validator: (value) {
-                          if (value == null) {
-                            return 'Please select a HOD';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 20),
                       ElevatedButton(
                         onPressed: _registerFaculty,
-                        child: const Text("Register"),
+                        child: const Text('Register Faculty'),
                       ),
                     ],
                   ),
@@ -390,23 +385,29 @@ class _ManageFacultyState extends State<ManageFaculty> {
               "Registered Faculty",
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 10),
             ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: facultyList.length,
               itemBuilder: (context, index) {
-                final faculty = facultyList[index];
                 return Card(
+                  elevation: 3,
                   child: ListTile(
                     leading: CircleAvatar(
-                      backgroundImage: NetworkImage(faculty['photo']),
+                      backgroundImage: NetworkImage(facultyList[index]['photo']),
                     ),
-                    title: Text(faculty['name']),
-                    subtitle: Text(faculty['email']),
+                    title: Text(facultyList[index]['name']),
+                    subtitle: Text(
+                      'Email: ${facultyList[index]['email']}\n'
+                      'Contact: ${facultyList[index]['contact']}\n'
+                      'Department: ${facultyList[index]['departmentName']}',
+                      style: const TextStyle(fontSize: 12),
+                    ),
                     trailing: IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () => _deleteFaculty(faculty['id']),
+                      icon: const Icon(Icons.delete),
+                      onPressed: () {
+                        _deleteFaculty(facultyList[index]['id']);
+                      },
                     ),
                   ),
                 );
