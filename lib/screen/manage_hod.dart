@@ -202,6 +202,12 @@ class _ManageHODState extends State<ManageHOD> {
     }
   }
 
+  void _removeImage() {
+    setState(() {
+      _selectedImage = null; // Remove the selected image
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -224,6 +230,41 @@ class _ManageHODState extends State<ManageHOD> {
               const Text(
                 "Add New HOD",
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              // Image selection and display
+              Center(
+                child: GestureDetector(
+                  onTap: _pickImage,
+                  child: Stack(
+                    children: [
+                      CircleAvatar(
+                        radius: 50,
+                        backgroundColor: const Color(0xff4c505b),
+                        backgroundImage: _selectedImage != null
+                            ? MemoryImage(_selectedImage!)
+                            : const AssetImage('assets/dummy-profile-pic.jpg'),
+                      ),
+                      if (_selectedImage != null)
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: GestureDetector(
+                            onTap: _removeImage,
+                            child: const CircleAvatar(
+                              radius: 20,
+                              backgroundColor: Colors.red,
+                              child: Icon(
+                                Icons.delete,
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
               ),
               const SizedBox(height: 10),
               Form(
@@ -261,36 +302,22 @@ class _ManageHODState extends State<ManageHOD> {
                         return null;
                       },
                     ),
-                    DropdownButtonFormField<String>(
+                    DropdownButtonFormField(
                       value: selectedDepartmentId,
-                      decoration: const InputDecoration(labelText: "Department"),
+                      decoration: const InputDecoration(labelText: 'Department'),
                       items: departmentMap.entries.map((entry) {
                         return DropdownMenuItem<String>(
                           value: entry.key,
                           child: Text(entry.value),
                         );
                       }).toList(),
-                      onChanged: (String? newValue) {
+                      onChanged: (value) {
                         setState(() {
-                          selectedDepartmentId = newValue;
+                          selectedDepartmentId = value as String?;
                         });
                       },
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please select a department';
-                        }
-                        return null;
-                      },
                     ),
                     const SizedBox(height: 10),
-                    ElevatedButton.icon(
-                      onPressed: _pickImage,
-                      icon: const Icon(Icons.image),
-                      label: const Text("Pick Image"),
-                    ),
-                    const SizedBox(height: 10),
-                    if (_selectedImage != null)
-                      Image.memory(_selectedImage!, height: 150),
                     TextFormField(
                       controller: _passController,
                       obscureText: true,
@@ -318,7 +345,7 @@ class _ManageHODState extends State<ManageHOD> {
             ),
             ListView.builder(
               shrinkWrap: true,
-              physics: NeverScrollableScrollPhysics(),
+              physics: const NeverScrollableScrollPhysics(),
               itemCount: hodList.length,
               itemBuilder: (context, index) {
                 final hod = hodList[index];
