@@ -108,24 +108,45 @@ class _ManageSecurityState extends State<ManageSecurity> {
   }
 
   Future<void> _uploadImage(String userId) async {
-    try {
-      if (_selectedImage != null) {
-        Reference ref = FirebaseStorage.instance.ref().child('security_images/$userId.jpg');
-        
-        // Upload the image from Uint8List
-        UploadTask uploadTask = ref.putData(_selectedImage!); // Use putData for Uint8List
-        TaskSnapshot taskSnapshot = await uploadTask.whenComplete(() => null);
-        String imageUrl = await taskSnapshot.ref.getDownloadURL();
+  try {
+    if (_selectedImage != null) {
+      // Create a reference to the Firebase Storage
+      Reference ref = FirebaseStorage.instance.ref().child('security_images/$userId.jpg');
+      
+      // Upload the image from Uint8List
+      UploadTask uploadTask = ref.putData(_selectedImage!);
+      
+      // Wait for the upload to complete
+      TaskSnapshot taskSnapshot = await uploadTask;
 
-        // Update Firestore with the image URL
-        await FirebaseFirestore.instance.collection('security').doc(userId).update({
-          'imageUrl': imageUrl,
-        });
-      }
-    } catch (e) {
-      print("Error uploading image: $e");
+      // Get the download URL
+      String imageUrl = await taskSnapshot.ref.getDownloadURL();
+
+      // Update Firestore with the image URL
+      await FirebaseFirestore.instance.collection('security').doc(userId).update({
+        'imageUrl': imageUrl,
+      });
+
+      Fluttertoast.showToast(
+        msg: "Image uploaded successfully",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.green,
+        textColor: Colors.white,
+      );
     }
+  } catch (e) {
+    print("Error uploading image: $e");
+    Fluttertoast.showToast(
+      msg: "Error uploading image: ${e.toString()}",
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      backgroundColor: Colors.red,
+      textColor: Colors.white,
+    );
   }
+}
+
 
   Future<void> _deleteSecurity(String id) async {
     try {

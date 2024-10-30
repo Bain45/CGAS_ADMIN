@@ -176,23 +176,44 @@ class _ManageFacultyState extends State<ManageFaculty> {
   }
 
   Future<void> _uploadImage(String facultyId) async {
+  if (_selectedImage != null) {
     try {
-      if (_selectedImage != null) {
-        Reference ref = FirebaseStorage.instance
-            .ref()
-            .child('faculty_images/$facultyId.jpg');
-        UploadTask uploadTask = ref.putData(_selectedImage!);
-        TaskSnapshot taskSnapshot = await uploadTask.whenComplete(() => null);
-        String imageUrl = await taskSnapshot.ref.getDownloadURL();
-        await FirebaseFirestore.instance
-            .collection('faculty')
-            .doc(facultyId)
-            .update({'imageUrl': imageUrl});
-      }
+      // Create a reference to the storage location
+      Reference ref = FirebaseStorage.instance.ref().child('faculty_images/$facultyId.jpg');
+
+      // Start the upload
+      UploadTask uploadTask = ref.putData(_selectedImage!);
+
+      // Wait for the upload to complete
+      TaskSnapshot taskSnapshot = await uploadTask;
+
+      // Get the download URL
+      String imageUrl = await taskSnapshot.ref.getDownloadURL();
+
+      // Update the Firestore document with the image URL
+      await FirebaseFirestore.instance.collection('faculty').doc(facultyId).update({
+        'imageUrl': imageUrl,
+      });
+
+      Fluttertoast.showToast(
+        msg: "Image uploaded successfully!",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.green,
+        textColor: Colors.white,
+      );
     } catch (e) {
       print("Error uploading image: $e");
+      Fluttertoast.showToast(
+        msg: "Error uploading image: $e",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+      );
     }
   }
+}
 
   Future<void> _deleteFaculty(String id) async {
     try {
