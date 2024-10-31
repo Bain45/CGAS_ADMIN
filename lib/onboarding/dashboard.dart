@@ -17,7 +17,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   int _selectedIndex = 0; // To keep track of the selected index for navigation
 
   // Sidebar items
-  List<String> _menuItems = ['Dashboard', 'Manage Security', 'Manage HOD', 'Manage Teacher', 'Manage Department', 'Year'];
+  List<String> _menuItems = ['Dashboard', 'Manage Security', 'Manage HOD', 'Manage Teacher', 'Manage Department', 'Manage Year'];
 
   // Function to switch between pages
   void _onItemTapped(int index) {
@@ -46,7 +46,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 30),
                         child: Image.asset(
-                          'assets/logo.png', // Add your logo here
+                          'assets/Logo.png', // Add your logo here
                           width: 120,
                           height: 120,
                         ),
@@ -156,7 +156,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       case 4:
         return Icons.settings;
       case 5:
-        return Icons.settings;
+        return Icons.date_range;
       default:
         return Icons.dashboard;
     }
